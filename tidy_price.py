@@ -40,7 +40,8 @@ def tidy_price(file):
     # read excel
     df = pd.read_excel(file)
     # select columns
-    df = df.iloc[:, [0, 6, 8, 7]]
+#     df = df.iloc[:, [0, 6, 8, 7]]
+    df = df[['商品ID', '一口价(单位元)', '活动价(单位元)', '专柜价(单位元)']]
     df.columns = ['id', 'fixed', 'active', 'shop']
     df.iloc[:, 0] = df.iloc[:, 0].astype(str)
     df.iloc[:, 1:] = np.ceil(df.iloc[:, 1:])
