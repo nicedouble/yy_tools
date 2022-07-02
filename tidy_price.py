@@ -4,7 +4,7 @@
 """
 @Time     : 2021/5/31 16:17
 @Author   : ji hao ran
-@File     : main.py
+@File     : tidy_price.py
 @Project  : yy_tools
 @Software : PyCharm
 """
