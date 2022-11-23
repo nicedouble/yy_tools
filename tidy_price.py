@@ -40,22 +40,22 @@ def tidy_price(file):
     df = pd.read_excel(file)
     # select columns
     #     df = df.iloc[:, [0, 6, 8, 7]]
-    df = df[['商品ID', '一口价(单位元)', '活动价(单位元)', '专柜价(单位元)']]
-    df.columns = ['id', 'fixed', 'active', 'shop']
+    df = df[['商品ID', '一口价(单位元)', '活动价(单位元)']]
+    df.columns = ['id', 'fixed', 'active']
     df.iloc[:, 0] = df.iloc[:, 0].astype(str)
     df.iloc[:, 1:] = np.ceil(df.iloc[:, 1:])
     # group and agg
     agg_df = df.groupby('id').agg(['min', 'std'])
-    agg_df.columns = ['fixed_min', 'fixed_std', 'active_min', 'active_std', 'shop_min', 'shop_std']
+    agg_df.columns = ['fixed_min', 'fixed_std', 'active_min', 'active_std']
     # group
-    df1 = agg_df.loc[agg_df[['fixed_std', 'active_std', 'shop_std']].apply(lambda x: all(x.isnull()), axis=1)]
-    df2 = agg_df.loc[agg_df[['fixed_std', 'active_std', 'shop_std']].apply(lambda x: all(x == 0), axis=1)]
-    df3 = agg_df.loc[agg_df[['fixed_std', 'active_std', 'shop_std']].apply(lambda x: any(x > 0), axis=1)]
+    df1 = agg_df.loc[agg_df[['fixed_std', 'active_std']].apply(lambda x: all(x.isnull()), axis=1)]
+    df2 = agg_df.loc[agg_df[['fixed_std', 'active_std']].apply(lambda x: all(x == 0), axis=1)]
+    df3 = agg_df.loc[agg_df[['fixed_std', 'active_std']].apply(lambda x: any(x > 0), axis=1)]
 
     # output
     def select(d):
-        d = d[['fixed_min', 'active_min', 'shop_min']].sort_values('fixed_min').reset_index()
-        d.columns = ['商品ID', '一口价(单位元)', '活动价(单位元)', '专柜价(单位元)']
+        d = d[['fixed_min', 'active_min']].sort_values('fixed_min').reset_index()
+        d.columns = ['商品ID', '一口价(单位元)', '活动价(单位元)']
         return d
 
     return select(df1), select(df2), select(df3)
@@ -72,6 +72,8 @@ st.sidebar.success("""
 
 if menu == '鹿班打标':
     file = st.file_uploader('上传Excel')
+    st.write('津贴设置')
+    st.number_input('每满', min_value=0)
     b = st.button('计算')
     # main layout
     if b:
@@ -98,7 +100,7 @@ if menu == '鹿班打标':
                                           filename=f'{pd.Timestamp.now().date()}价格表'), unsafe_allow_html=True)
             st.info("""
             备注：  
-            1. 选取目标列[商品ID, 一口价(单位元), 专柜价(单位元), 活动价(单位元)]  
+            1. 选取目标列[商品ID, 一口价(单位元), 活动价(单位元)]  
             2. 价格向上取整  
             3. 按商品ID列分组聚合  
             4. 根据价格方差对结果分类  
