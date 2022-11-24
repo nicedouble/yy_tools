@@ -105,33 +105,24 @@ if menu == '鹿班打标':
     col = st.columns(5)
     with col[0].expander('津贴 😀', True):
         st.checkbox('启用', True, key='u')
-        st.number_input('每满', key='m', min_value=0, value=1400,
-                        disabled=False if st.session_state['u'] else True)
+        st.number_input('每满', key='m', min_value=0, value=1400, disabled=False if st.session_state['u'] else True)
         st.number_input('减', key='n', min_value=0, value=100, disabled=False if st.session_state['u'] else True)
     with col[1].expander('优惠券1', True):
         st.checkbox('启用', True, key='u1')
-        st.number_input('满', min_value=0, value=1499, key='m1',
-                        disabled=False if st.session_state['u1'] else True)
-        st.number_input('减', min_value=0, value=50, key='n1',
-                        disabled=False if st.session_state['u1'] else True)
+        st.number_input('满', min_value=0, value=1499, key='m1', disabled=False if st.session_state['u1'] else True)
+        st.number_input('减', min_value=0, value=50, key='n1', disabled=False if st.session_state['u1'] else True)
     with col[2].expander('优惠券2', True):
         st.checkbox('启用', key='u2')
-        st.number_input('满', min_value=0, value=1499, key='m2',
-                        disabled=False if st.session_state['u2'] else True)
-        st.number_input('减', min_value=0, value=50, key='n2',
-                        disabled=False if st.session_state['u2'] else True)
+        st.number_input('满', min_value=0, key='m2', disabled=False if st.session_state['u2'] else True)
+        st.number_input('减', min_value=0, key='n2', disabled=False if st.session_state['u2'] else True)
     with col[3].expander('优惠券3', True):
         st.checkbox('启用', key='u3')
-        st.number_input('满', min_value=0, value=1499, key='m3',
-                        disabled=False if st.session_state['u3'] else True)
-        st.number_input('减', min_value=0, value=50, key='n3',
-                        disabled=False if st.session_state['u3'] else True)
+        st.number_input('满', min_value=0, key='m3', disabled=False if st.session_state['u3'] else True)
+        st.number_input('减', min_value=0, key='n3', disabled=False if st.session_state['u3'] else True)
     with col[4].expander('优惠券4', True):
         st.checkbox('启用', key='u4')
-        st.number_input('满', min_value=0, value=1499, key='m4',
-                        disabled=False if st.session_state['u4'] else True)
-        st.number_input('减', min_value=0, value=50, key='n4',
-                        disabled=False if st.session_state['u4'] else True)
+        st.number_input('满', min_value=0, key='m4', disabled=False if st.session_state['u4'] else True)
+        st.number_input('减', min_value=0, key='n4', disabled=False if st.session_state['u4'] else True)
 
     b = st.button('计算')
     # main layout
