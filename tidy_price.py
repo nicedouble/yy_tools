@@ -55,8 +55,8 @@ def tidy_price(file):
 
     # output
     def select(d):
-        # 活动价取整
-        d['active_int'] = d['active_min'].apply(lambda x: np.ceil(x))
+        # 一口价取整
+        d['fixed_int'] = d['fixed_min'].apply(lambda x: np.ceil(x))
         # 津贴列
         if st.session_state['u']:
             d['jin_tie'] = d['active_min'].apply(lambda x: jin_tie(x, st.session_state['m'], st.session_state['n']))
@@ -74,9 +74,9 @@ def tidy_price(file):
         # 到手价
         d['dao_shou'] = d[['active_min', 'jin_tie', 'yhq']].apply(lambda x: np.ceil(x[0] - x[1] - x[2]), axis=1)
         # 选择列
-        d = d[['fixed_min', 'active_min', 'active_int', 'jin_tie', 'yhq', 'dao_shou']].sort_values(
+        d = d[['fixed_min', 'fixed_int', 'active_min', 'jin_tie', 'yhq', 'dao_shou']].sort_values(
             'fixed_min').reset_index()
-        d.columns = ['商品ID', '一口价', '活动价', '活动价取整', '津贴', '优惠券', '到手价']
+        d.columns = ['商品ID', '一口价', '一口价取整', '活动价', '津贴', '优惠券', '到手价']
         return d
 
     return select(df1), select(df2), select(df3)
@@ -89,12 +89,12 @@ def jin_tie(huo_dong_jia, mei_man, jian):
 
 def you_hui_quan(huo_dong_jia, *man_jian):
     # 计算优惠券 满**减** 多个叠加
-    r = []
+    r = 0
     for i in man_jian:
         man, jian = i[0], i[1]
-        if huo_dong_jia >= man:
-            r.append(jian)
-    return sum(r)
+        if huo_dong_jia >= man and r < jian:
+            r = jian
+    return r
 
 
 # sidebar layout
