@@ -22,6 +22,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+if 'luban_btn' not in st.session_state:
+    st.session_state['luban_btn'] = False
+
+if 'luban_upload' not in st.session_state:
+    st.session_state['luban_upload'] = False
+
+
+def btn_callback():
+    st.session_state['luban_btn'] = True
+
+
+def upload_callback():
+    st.session_state['luban_upload'] = True
+
 
 def download_as_excel(df, sheet, filename: str = 'download'):
     """下载dataframe为csv"""
@@ -49,8 +63,11 @@ def tidy_price(file):
     agg_df = df.groupby('id').agg(['min', 'std'])
     agg_df.columns = ['fixed_min', 'fixed_std', 'active_min', 'active_std']
     # 分为3个表
+    # 只有一个商品ID
     df1 = agg_df.loc[agg_df[['fixed_std', 'active_std']].apply(lambda x: all(x.isnull()), axis=1)]
+    # 有多个商品ID, 价格相同
     df2 = agg_df.loc[agg_df[['fixed_std', 'active_std']].apply(lambda x: all(x == 0), axis=1)]
+    # 有多个商品ID, 价格不同
     df3 = agg_df.loc[agg_df[['fixed_std', 'active_std']].apply(lambda x: any(x > 0), axis=1)]
 
     # output
@@ -79,7 +96,7 @@ def tidy_price(file):
         d.columns = ['商品ID', '一口价', '一口价取整', '活动价', '津贴', '优惠券', '到手价']
         return d
 
-    return select(df1), select(df2), select(df3)
+    return select(pd.concat([df1, df2], ignore_index=True)), select(df3)
 
 
 def jin_tie(huo_dong_jia, mei_man, jian):
@@ -101,7 +118,7 @@ def you_hui_quan(huo_dong_jia, *man_jian):
 menu = st.sidebar.radio('功能', ['鹿班打标', '价格检测'])
 
 if menu == '鹿班打标':
-    file = st.file_uploader('上传Excel')
+    file = st.file_uploader('上传Excel', on_change=upload_callback)
     col = st.columns(5)
     with col[0].expander('津贴 😀', True):
         st.checkbox('启用', True, key='u')
@@ -124,22 +141,21 @@ if menu == '鹿班打标':
         st.number_input('满', min_value=0, key='m4', disabled=False if st.session_state['u4'] else True)
         st.number_input('减', min_value=0, key='n4', disabled=False if st.session_state['u4'] else True)
 
-    b = st.button('计算')
+    b = st.button('计算', key='button', on_click=btn_callback)
     # main layout
-    if b:
-        if file is not None:
+    if st.session_state['luban_btn']:
+        if st.session_state['luban_upload']:
             with st.spinner('计算中...'):
-                d1, d2, d3 = tidy_price(file)
-            tabs = st.tabs(['只有一个商品ID', '有多个商品ID,价格相同', '有多个商品ID,价格不同'])
+                d1, d2 = tidy_price(file)
+            tabs = st.tabs(['没有起', '有起'])
             with tabs[0]:
                 st.dataframe(d1, use_container_width=True)
             with tabs[1]:
                 st.dataframe(d2, use_container_width=True)
-            with tabs[2]:
-                st.dataframe(d3, use_container_width=True)
 
-            st.markdown(download_as_excel([d1, d2, d3], ['只有一个商品ID', '多个商品ID价格相同', '多个商品ID价格不同'],
-                                          filename=f'{pd.Timestamp.now().date()}价格表'), unsafe_allow_html=True)
+            st.multiselect('选择列', options=d1.columns.tolist(), default=['商品ID', '到手价', '一口价取整'])
+            st.markdown(download_as_excel([d1, d2], ['没有起', '有起'], filename=f'{pd.Timestamp.now().date()}价格表'),
+                        unsafe_allow_html=True)
             st.info("""
             备注：  
             1. 选取目标列[商品ID, 一口价(单位元), 活动价(单位元)]  
@@ -147,6 +163,7 @@ if menu == '鹿班打标':
             3. 按商品ID列分组计算价格最小值和方差
             4. 根据价格方差对结果分类  
             5. 每个表根据一口价升序排序  
+            6. 没有起：只有一个商品ID或者有多个商品ID, 价格相同。有起：有多个商品ID, 价格不同。
             """)
             st.balloons()
         else:
