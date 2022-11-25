@@ -122,8 +122,6 @@ if menu == '鹿班打标':
     with st.sidebar.container():
         st.markdown('---')
         file = st.file_uploader('上传Excel')
-        cols = st.multiselect('选择下载列', options=['商品ID', '一口价', '一口价取整', '活动价', '津贴', '优惠券', '到手价'],
-                              default=['商品ID', '到手价', '一口价取整'])
         max_row = st.number_input('最大表格行数', min_value=0, value=2000, help='打标上传表格行数限值')
     col = st.columns(5)
     with col[0].expander('津贴 😀', True):
@@ -160,10 +158,11 @@ if menu == '鹿班打标':
                 st.dataframe(d2, use_container_width=True)
             # 下载
             col = st.columns(2)
-            download_df1 = divide_df(d1[cols], max_row)
-            download_df2 = divide_df(d2[cols], max_row, '有起')
-            download = [[*i[0], *i[1]] for i in zip(download_df1, download_df2)]
             with col[0]:
+                cols = ['商品ID', '到手价', '一口价取整']
+                download_df1 = divide_df(d1[cols], max_row)
+                download_df2 = divide_df(d2[cols], max_row, '有起')
+                download = [[*i[0], *i[1]] for i in zip(download_df1, download_df2)]
                 download_excel(*download, filename=f'{pd.Timestamp.now().date()}打标表', title='下载打标表')
             with col[1]:
                 download_excel([d1, d2], ['没有起', '有起'], filename=f'{pd.Timestamp.now().date()}计算表', title='下载计算表')
