@@ -22,22 +22,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-if 'luban_btn' not in st.session_state:
-    st.session_state['luban_btn'] = False
 
-if 'luban_upload' not in st.session_state:
-    st.session_state['luban_upload'] = False
-
-
-def btn_callback():
-    st.session_state['luban_btn'] = True
-
-
-def upload_callback():
-    st.session_state['luban_upload'] = True
-
-
-def download_as_excel(df, sheet, filename: str = 'download'):
+def download_excel(df, sheet, filename: str = 'download', title='Download'):
     """下载dataframe为csv"""
     buffer = io.BytesIO()
     with pd.ExcelWriter(buffer) as writer:
@@ -46,7 +32,8 @@ def download_as_excel(df, sheet, filename: str = 'download'):
     buffer.seek(0)
     b64 = base64.b64encode(buffer.read()).decode()
     data = 'data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64'
-    return f'<a href="{data},{b64}" download="{filename}.xlsx">Download as xlsx</a>'
+    download_str = f'<a href="{data},{b64}" download="{filename}.xlsx">{title}</a>'
+    return st.markdown(download_str, unsafe_allow_html=True)
 
 
 def tidy_price(file):
@@ -114,11 +101,30 @@ def you_hui_quan(huo_dong_jia, *man_jian):
     return r
 
 
+def divide_df(df, max_row: int, sheet_name_prefix: str = '没有起'):
+    r = []
+    for i in range(1000):
+        start_i = max_row * i
+        end_i = max_row * (i + 1)
+        if df.shape[0] > end_i:
+            r.append(df.iloc[start_i:end_i])
+        else:
+            r.append(df.iloc[start_i:df.shape[0]])
+            break
+    r_name = [f'{sheet_name_prefix}_{i}' for i in range(1, len(r) + 1)]
+    return r, r_name
+
+
 # sidebar layout
 menu = st.sidebar.radio('功能', ['鹿班打标', '价格检测'])
 
 if menu == '鹿班打标':
-    file = st.file_uploader('上传Excel', on_change=upload_callback)
+    with st.sidebar.container():
+        st.markdown('---')
+        file = st.file_uploader('上传Excel')
+        cols = st.multiselect('选择下载列', options=['商品ID', '一口价', '一口价取整', '活动价', '津贴', '优惠券', '到手价'],
+                              default=['商品ID', '到手价', '一口价取整'])
+        max_row = st.number_input('最大表格行数', min_value=0, value=2000, help='打标上传表格行数限值')
     col = st.columns(5)
     with col[0].expander('津贴 😀', True):
         st.checkbox('启用', True, key='u')
@@ -141,10 +147,10 @@ if menu == '鹿班打标':
         st.number_input('满', min_value=0, key='m4', disabled=False if st.session_state['u4'] else True)
         st.number_input('减', min_value=0, key='n4', disabled=False if st.session_state['u4'] else True)
 
-    b = st.button('计算', key='button', on_click=btn_callback)
+    b = st.button('计算', key='button')
     # main layout
-    if st.session_state['luban_btn']:
-        if st.session_state['luban_upload']:
+    if b:
+        if file:
             with st.spinner('计算中...'):
                 d1, d2 = tidy_price(file)
             tabs = st.tabs(['没有起', '有起'])
@@ -152,10 +158,15 @@ if menu == '鹿班打标':
                 st.dataframe(d1, use_container_width=True)
             with tabs[1]:
                 st.dataframe(d2, use_container_width=True)
-
-            st.multiselect('选择列', options=d1.columns.tolist(), default=['商品ID', '到手价', '一口价取整'])
-            st.markdown(download_as_excel([d1, d2], ['没有起', '有起'], filename=f'{pd.Timestamp.now().date()}价格表'),
-                        unsafe_allow_html=True)
+            # 下载
+            col = st.columns(2)
+            download_df1 = divide_df(d1[cols], max_row)
+            download_df2 = divide_df(d2[cols], max_row, '有起')
+            download = [[*i[0], *i[1]] for i in zip(download_df1, download_df2)]
+            with col[0]:
+                download_excel(*download, filename=f'{pd.Timestamp.now().date()}打标表', title='下载打标表')
+            with col[1]:
+                download_excel([d1, d2], ['没有起', '有起'], filename=f'{pd.Timestamp.now().date()}计算表', title='下载计算表')
             st.info("""
             备注：  
             1. 选取目标列[商品ID, 一口价(单位元), 活动价(单位元)]  
@@ -232,8 +243,8 @@ if menu == '价格检测':
             else:
                 st.info('无未上架情形')
 
-            st.markdown(download_as_excel([m_df, s_df, no_df], ['多商品ID', '单商品ID', '未上架'],
-                                          filename=f'{pd.Timestamp.now().date()}价格检测'), unsafe_allow_html=True)
+            st.markdown(download_excel([m_df, s_df, no_df], ['多商品ID', '单商品ID', '未上架'],
+                                       filename=f'{pd.Timestamp.now().date()}价格检测'), unsafe_allow_html=True)
             st.balloons()
         else:
             st.warning('请先上传表格，再点击计算按钮！')
