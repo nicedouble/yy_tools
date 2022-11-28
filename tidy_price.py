@@ -83,7 +83,7 @@ def tidy_price(file):
         d.columns = ['商品ID', '一口价', '一口价取整', '活动价', '津贴', '优惠券', '到手价']
         return d
 
-    return select(pd.concat([df1, df2], ignore_index=True)), select(df3)
+    return select(pd.concat([df1, df2])), select(df3)
 
 
 def jin_tie(huo_dong_jia, mei_man, jian):
